@@ -1,0 +1,271 @@
+# Deployments
+
+You can create a deployment simply using a `kubectl` command,
+like so:
+
+```console
+$ kubectl create deployment -h 
+$ kubectl create deployment myfirstdeployment --image public.ecr.aws/p9b0l7y4/eduk8s-sampleapp
+
+deployment.apps/myfirstdeployment created
+```
+
+or using a manifest file.
+
+Create a file called `myseconddeployment.yaml` containing:
+
+```YAML
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myseconddeployment
+  labels:
+    app: myseconddeployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myseconddeployment
+  template:
+    metadata:
+      labels:
+        app: myseconddeployment
+    spec:
+      containers:
+      - name: sampleapp
+        image: public.ecr.aws/p9b0l7y4/eduk8s-sampleapp
+```
+
+And schedule it using:
+
+```console
+$ kubectl apply -f myseconddeployment.yaml
+
+deployment.apps/myseconddeployment created
+```
+
+## Tip: --dry-run -o yaml
+
+If you think these manifests are quite verbose and it will be impossible to 
+remember all the syntax. Luckily you don't really have to.
+
+For every `kubectl create` command, you can append the options `--dry-run=client -o yaml`
+and instead of creating a resource, `kubectl` will print out the manifest that 
+it _would_ use if `--dry-run` was not supplied.
+
+For example, appending these options to the first command above:
+
+```console
+$ kubectl create deployment myfirstdeployment --image public.ecr.aws/p9b0l7y4/eduk8s-sampleapp --dry-run=client -o yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: myfirstdeployment
+  name: myfirstdeployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myfirstdeployment
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: myfirstdeployment
+    spec:
+      containers:
+      - image: public.ecr.aws/p9b0l7y4/eduk8s-sampleapp
+        name: sampleapp
+        resources: {}
+status: {}
+```
+You can even leave the empty values - `{}` or `null` - in your manifest
+
+
+# List the deployments
+
+At this point, you should have two deployments
+
+```console
+$ kubectl get deployments
+
+NAME                 READY   UP-TO-DATE   AVAILABLE   AGE
+myfirstdeployment    1/1     1            1           19m
+myseconddeployment   1/1     1            1           10m
+```
+
+
+# List the deployment's pods
+
+In Kubernetes a Deployment still runs your application in one or more Pods,
+and adds some nice Pod-management functions.
+
+First, list the pods from our two deployments:
+
+```console
+$ kubectl get pods
+
+NAME                                  READY   STATUS        RESTARTS   AGE
+myfirstdeployment-6d6f57bff4-xqws6    1/1     Running       0          18m
+myseconddeployment-675797b699-c45nl   1/1     Running       0          12m
+```
+
+If all has gone smoothly, you should see 2 pods with Status=Running (1 per 
+deployment).
+
+
+# Update the application configuration
+
+In a previous exercise we saw that we could not update a running pod's config.
+Deployments make this possible, and we don't need to delete the Pod first.
+
+Let's specify a custom MESSAGE environment variable again, this time by editing
+the `myseconddeployment.yaml` from before.
+
+Append an `env:` section with our MESSAGE variable to the contianer at bottom 
+of the file.
+
+```YAML
+      containers:
+      - name: sampleapp
+        image: public.ecr.aws/p9b0l7y4/eduk8s-sampleapp
+        env:
+        - name: MESSAGE
+          value: myseconddeployment says hi
+```
+
+To apply the change, save the file, and we can re-apply the file.
+
+__Quickly run the subsequent `kubectl get pods` commands so you don't miss the
+magic.__
+
+```console
+$ kubectl apply -f myseconddeployment.yaml
+deployment.apps/myseconddeployment configured
+
+$ kubectl get pods
+NAME                                  READY   STATUS              RESTARTS   AGE
+myfirstdeployment-6d6f57bff4-xqws6    1/1     Running             0          21m
+myseconddeployment-675797b699-c45nl   1/1     Running             0          15m
+myseconddeployment-758548869-hhc6c    0/1     ContainerCreating   0          2s
+
+$ kubectl get pods
+NAME                                  READY   STATUS              RESTARTS   AGE
+myfirstdeployment-6d6f57bff4-xqws6    1/1     Running             0          21m
+myseconddeployment-675797b699-c45nl   1/1     Terminating         0          15m
+myseconddeployment-758548869-hhc6c    1/1     Running             0          5s
+
+$ kubectl get pods
+NAME                                  READY   STATUS              RESTARTS   AGE
+myfirstdeployment-6d6f57bff4-xqws6    1/1     Running             0          22m
+myseconddeployment-675797b699-c45nl   0/1     Terminating         0          16m
+myseconddeployment-758548869-hhc6c    1/1     Running             0          36s
+
+$ kubectl get pods
+NAME                                  READY   STATUS     RESTARTS   AGE
+myfirstdeployment-6d6f57bff4-xqws6    1/1     Running    0          22m
+myseconddeployment-758548869-hhc6c    1/1     Running    0          39s
+```
+
+When updating Kubernetes Deployment
+configuration, Kubernetes will automatically:
+
+1. Create a new pod
+2. Wait for that pod to be "ready"
+3. Shut down (or "Terminate") the older pod
+
+That is what is called a rolling deployment.
+
+
+# Undo our change
+
+Another task that the Kubernetes Deployment assists with, is to undo a change
+for whatever reason.
+
+Have a look at `myseconddeployment`'s rollout history:
+
+```console
+$ kubectl rollout history deploy/myseconddeployment
+
+deployment.apps/myseconddeployment
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+```
+
+The rollout history shows that `myseconddeployment` has 2 _revisions_. 
+Unfortunately the `CHANGE-CAUSE` column is not very helpful, but we can 
+assume Revision 1 is from when we first created it, and Revision 2 is the custom 
+MESSAGE change we just applied.
+
+You can rollback your change using:
+
+```console
+$ kubectl rollout undo deployment/myseconddeployment --to-revision=1
+
+deployment.apps/myseconddeployment rolled back
+```
+
+# Rollout history
+
+Now look at the rollout history again:
+
+```console
+$ kubectl rollout history deploy/myseconddeployment
+deployment.apps/myseconddeployment
+REVISION  CHANGE-CAUSE
+2         <none>
+3         <none>
+```
+
+We see revisions 2 and 3. What happened to 1?  When rolling back to a previous 
+revision, that revision is promoted to become the latest revision (here rev 1 
+became rev 3)
+
+By default Kubernetes will keep record of the last 10 revisions for each 
+Deployment. This can be configured as needed by specifying a limit in the 
+deployment manifest:
+
+```YAML
+spec:
+    revisionHistoryLimit: 20
+```
+
+
+## Rolling update startegy
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: nginx-roll
+  name: nginx-roll
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-roll
+  strategy:
+    rollingUpdate:
+      maxSurge: 25% # Default
+      maxUnavailable: 25% # Default
+    type: RollingUpdate #Default
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx-roll
+    spec:
+      containers:
+      - image: nginx:1.23.2
+        name: nginx
+```
+
+
+
+

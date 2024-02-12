@@ -1,0 +1,73 @@
+# sampleapp
+
+`public.ecr.aws/p9b0l7y4/eduk8s-sampleapp` is a very simple dockerised Flask application.
+
+Essentially, it's a "Hello World" applicaiton written in Python, with one added
+feature. You can overwrite the default "Hello World" message by setting an 
+Environment variable in the container.
+
+Let's try running it using only Docker, before we explore how we may run it on
+Kubernetes.
+
+## Running a docker container
+
+```console
+$ docker run public.ecr.aws/p9b0l7y4/eduk8s-sampleapp
+
+    Hello world<br/>
+    <br/>
+    from Host: a7949c44f980, PID: 1</i>
+
+ * Serving Flask app 'app' (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on all addresses.
+   WARNING: This is a development server. Do not use it in a production deployment.
+ * Running on http://172.17.0.2:5000/ (Press CTRL+C to quit) 
+```
+
+Press CTRL+C to quit the running container.
+
+
+## Expose / Publish port 5000
+
+```console
+$ docker run -p 5000:5000 sampleapp
+
+    Hello world<br/>
+    <br/>
+    from Host: a8864a4816bf, PID: 1</i>
+
+ * Serving Flask app 'app' (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on all addresses.
+   WARNING: This is a development server. Do not use it in a production deployment.
+ * Running on http://172.17.0.2:5000/ (Press CTRL+C to quit)
+```
+
+This maps port 5000 on your machine, to port 5000 on the container.
+You could use a different local port (say port 8000) by passing `-p 8000:5000`
+(i.e. "-p HOST_PORT:CONTAINER_PORT")
+
+# Access container in a browser
+
+You can now open [localhost:5000](http://localhost:5000) in your browser and should see
+the following:
+
+```
+Hello world
+
+from Host: 83be962c75bc, PID: 1
+```
+
+(The "Host" will show the name of _your_ container)
+
+
+# Next up
+
+[02-scheduling-a-pod.mkd](./02-scheduling-a-pod.mkd)

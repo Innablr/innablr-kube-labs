@@ -1,0 +1,49 @@
+# Add labels to our pod
+
+Update the pod definition with labels values
+```YAML
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sampleapp2
+  labels:
+    app: test-app
+spec:
+  containers:
+  - name: sampleapp
+    image: public.ecr.aws/p9b0l7y4/eduk8s-sampleapp
+    env:
+    - name: MESSAGE
+      value: Personalised greeting from manifest
+```
+
+# deploy the pod
+
+```
+kubectl apply -f pod.yaml
+```
+
+# get all pod with labels
+
+```
+kubeclt get pods --show-labels
+```
+
+# Select the pod with our label
+
+```
+kubectl get pods --selector app=test-app
+```
+
+# Clean up
+
+Before proceeding, let's clean up after ourselves.
+
+```console
+$ kubectl delete pod sampleapp sampleapp2
+
+pod "sampleapp" deleted
+pod "sampleapp2" deleted
+```
+

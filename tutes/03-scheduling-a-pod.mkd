@@ -1,0 +1,126 @@
+# Running our first Pods
+
+Scheduling a pod from a docker image
+
+```console
+$ kubectl run sampleapp --image public.ecr.aws/p9b0l7y4/eduk8s-sampleapp
+
+pod/sampleapp created
+```
+
+To check that the pod was created successfully we can run:
+
+```console
+$ kubectl get pods
+
+NAME        READY   STATUS    RESTARTS   AGE
+sampleapp   1/1     Running   0          114s
+```
+
+To see a little more info about the pod, try out one of the following commands:
+
+```console
+$ kubectl get pods --output wide
+
+NAME         READY   STATUS    RESTARTS   AGE    IP           NODE                 NOMINATED NODE   READINESS GATES
+sampleapp    1/1     Running   0          6m7s   10.244.0.5   kind-control-plane   <none>           <none>
+```
+(or the shorter version `kubectl get po -o wide`)
+
+# Access the pod in a browser
+
+In Kubernetes, we can use the `port-forward` subcommand to temporarily map a 
+port on a pod to a port on your development machine. 
+
+```console
+$ kubectl port-forward sampleapp 8000:5000
+
+Forwarding from 127.0.0.1:8000 -> 5000
+Forwarding from [::1]:8000 -> 5000
+```
+(Much like using Docker run's `--publish 8000:5000`)
+
+Now open [localhost:8000](http://localhost:8000) in your browser and should see
+the following:
+
+```
+Hello world
+
+from Host: sampleapp, PID: 1
+```
+
+(Press Ctrl+C to exit `kubectl port-forward`)
+
+
+# Run pod with custom environment
+
+This time give the pod a custom MESSAGE environment variable
+
+```console
+$ kubectl run sampleapp --image public.ecr.aws/p9b0l7y4/eduk8s-sampleapp --env "MESSAGE=Personalised greeting from Environment"
+
+Error from server (AlreadyExists): pods "sampleapp" already exists
+```
+
+This error is expected, as a running Pod cannot be altered.
+
+Delete the pod and try the above command again.
+
+```console
+$ kubectl delete pod sampleapp
+
+pod "sampleapp" deleted
+
+$ kubectl run sampleapp --image public.ecr.aws/p9b0l7y4/eduk8s-sampleapp --env "MESSAGE=Personalised greeting from Environment"
+
+pod/sampleapp created
+```
+
+Again, use the `port-forward` command (above) to map a port on your machine to
+the new sampleapp pod, and verify the new message in your browser.
+
+
+# Run pod with a Pod manifest
+
+Another, often preferred, method of scheduling a Pod (or any Kubernetes resource),
+is by creating a "manifest" file that describes the desired state.
+
+Create a file called `pod.yaml` with the following content:
+
+```YAML
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sampleapp2
+spec:
+  containers:
+  - name: sampleapp
+    image: public.ecr.aws/p9b0l7y4/eduk8s-sampleapp
+    env:
+    - name: MESSAGE
+      value: Personalised greeting from manifest
+```
+
+This can then be scheduled on your cluster using the following command.
+
+```console
+$ kubectl apply -f pod.yaml
+
+pod/sampleapp2 created
+```
+
+# Clean up
+
+Before proceeding, let's clean up after ourselves.
+
+```console
+$ kubectl delete pod sampleapp sampleapp2
+
+pod "sampleapp" deleted
+pod "sampleapp2" deleted
+```
+
+# Next up
+
+[03-scheduling-deployments.mkd](./03-scheduling-deployments.mkd)

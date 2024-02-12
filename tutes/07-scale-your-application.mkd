@@ -1,0 +1,91 @@
+# Scale Your Application
+
+Another handy feature of Deployments, is how it helps you scale your application.
+
+It does this by letting you configure a desired number of `replicas` (number of
+instances of Pods).
+
+If left unspecified, each Deployment will get 1 Pod by default.
+
+Let's verify this:
+
+```console
+$ kubectl get deployments
+
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+myconfigmapdeployment   1/1     1            1           2h25m
+myfirstdeployment       1/1     1            1           10h
+myseconddeployment      1/1     1            1           9h
+
+```
+
+Looking at the `READY` column, we see that each deployment has 1/1 "Ready" 
+replicas. The first 1 is the number currently Ready, and the second 1 is the 
+the desired number of pods currently configured. If you had `0/1`, then that
+would mean "You requested 1, but for some reason or another, Kubernetes was
+not able to schedule them successfully.
+
+You can change the number of pods of a running deployment using the `scale` 
+subcommand.
+
+```console
+$ kubectl scale deployment/myfirstdeployment --replicas=3
+deployment.apps/myfirstdeployment scaled
+
+$ kubectl get deployment
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+myconfigmapdeployment   1/1     1            1           2h33m
+myfirstdeployment       2/3     3            2           10h
+myseconddeployment      1/1     1            1           9h
+
+$ kubectl get deployment
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+myconfigmapdeployment   1/1     1            1           2h33m
+myfirstdeployment       3/3     3            3           10h
+myseconddeployment      1/1     1            1           9h
+```
+
+Before we look at how to scale myseconddeployment by editing the manifest file.
+
+Let's power down `myfirstdeployment` entirely, by scaling it down to 0 replicas.
+
+```console
+$ kubectl scale deployment/myfirstdeployment --replicas=0
+deployment.apps/myfirstdeployment scaled
+
+$ kubectl get deployment
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+myconfigmapdeployment   1/1     1            1           2h37m
+myfirstdeployment       0/0     0            0           10h
+myseconddeployment      1/1     1            1           9h
+```
+
+The other way to scale our application, is to update the deployment manifest.
+
+Edit the manifest from the previous [03-scheduling-deployments.mkd](./03-scheduling-deployments.mkd)
+exercise.
+
+Find and replace `replicas: 1` with `replicas: 2`.
+
+Now if re-apply that manifest:
+
+```console
+$ kubectl apply -f myseconddeployment.yaml
+deployment.apps/myseconddeployment configured
+
+$ kubectl get deploy
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+myconfigmapdeployment   1/1     1            1           2h43m
+myfirstdeployment       0/0     0            0           10h
+myseconddeployment      1/2     2            1           9h
+
+# The desired count has increased, but the current count has not yet increased
+
+$ kubectl get deploy
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+myconfigmapdeployment   1/1     1            1           2h44m
+myfirstdeployment       0/0     0            0           10h
+myseconddeployment      2/2     2            2           9h
+```
+
+

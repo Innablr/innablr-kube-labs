@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sampleapp2
+  labels:
+    app: test-app
+    new: this-is-new
+spec:
+  containers:
+  - name: sampleapp
+    image: public.ecr.aws/p9b0l7y4/eduk8s-sampleapp
+    env:
+    - name: MESSAGE
+      value: Personalised greeting from manifestasdasdads

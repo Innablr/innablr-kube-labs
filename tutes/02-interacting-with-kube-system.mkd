@@ -1,0 +1,29 @@
+## Let's interact with kube-system
+
+1. Get all namesapces
+
+```
+kubectl get namespaces
+```
+
+2. Explore all pods in kube-system namespace
+
+```
+kubectl get pods -n kube-system 
+```
+
+3. Try resource short hands
+
+```
+k get ns
+```
+
+```
+k get po -n kube-system
+```
+
+4. Inspect the kub-api server pod definition
+
+```
+k get po -n kube-system kube-apiserver-kind-control-plane -o yaml 
+```

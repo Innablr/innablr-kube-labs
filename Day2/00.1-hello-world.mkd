@@ -1,0 +1,49 @@
+In this section we will use the kubectl utility to just run a simple hello world container and interact with it. We will use kuard as our first pod which is the (Demo application for "Kubernetes Up and Running")[kubernetes-up-and-running/kuard] 
+
+Fire up a new terminal and run your first pod
+
+```
+$ kubectl run --restart=Never --image=gcr.io/kuar-demo/kuard-amd64:blue kuard
+```
+
+Let's interact with our pod Run the following to check if the pod is running
+
+```
+$ kubectl get pods
+```
+
+Let's explore the pod spec
+
+```
+$ kubectl get pod kuard -o yaml
+```
+
+Once it is running let's access the pod
+
+```
+$ kubectl port-forward kuard 8080:8080
+# connect to the pod http://localhost:8080
+```
+
+Tail the logs
+
+```
+# kubectl command
+$ kubectl logs -f kuard
+```
+
+OR
+
+```
+# stern
+$ stern kuard
+```
+
+Explore events
+
+```
+$ kubectl get events
+```
+
+In this exercise, we ran a pod in the cluster which deployed the kuard container without much knowledge of Kubernetes or how it works. In next few chapters we will look at some basic Kubernetes concepts and understand the details behind the kubectl run
+
